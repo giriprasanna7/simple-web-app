@@ -12,7 +12,7 @@ const server = http.createServer((req, res) => {
             <title>Jenkins Docker App</title>
         </head>
         <body>
-            <h1>Hello from Jenkins + Docker!</h1>
+            <h1>Jenkins CI/CD Automatic Build!</h1>
             <p>CI/CD pipeline is working successfully.</p>
         </body>
         </html>
