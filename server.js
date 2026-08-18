@@ -5,7 +5,7 @@ const PORT = 3000;
 const buses = [
     {
         id: 1,
-        name: "A1 Travels",
+        name: "Express Travels",
         type: "AC Sleeper",
         departure: "06:30 AM",
         arrival: "12:30 PM",
