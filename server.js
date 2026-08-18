@@ -41,13 +41,68 @@ const buses = [
     }
 ];
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(function (req, res) {
 
     res.writeHead(200, {
         "Content-Type": "text/html"
     });
 
-    res.end(`
+    const busCards = buses.map(function (bus) {
+        return `
+            <div class="bus-card">
+
+                <div>
+                    <div class="bus-name">${bus.name}</div>
+                    <div class="bus-type">${bus.type}</div>
+                </div>
+
+                <div>
+                    <div class="time">${bus.departure}</div>
+                    <div class="small-text">Departure</div>
+                </div>
+
+                <div>
+                    <div class="time">${bus.arrival}</div>
+                    <div class="small-text">Arrival</div>
+                </div>
+
+                <div>
+                    <div class="duration">${bus.duration}</div>
+                    <div class="price">₹${bus.price}</div>
+                </div>
+
+                <button class="book-btn"
+                    onclick="openBooking(${bus.id})">
+                    Book Now
+                </button>
+
+            </div>
+        `;
+    }).join("");
+
+    const seatButtons = Array.from(
+        { length: 20 },
+        function (_, index) {
+
+            const seatNumber = index + 1;
+
+            const booked =
+                [4, 9, 15].includes(seatNumber);
+
+            return `
+                <button
+                    class="seat ${booked ? "booked" : ""}"
+                    ${booked ? "disabled" : ""}
+                    onclick="selectSeat(this, ${seatNumber})">
+                    ${seatNumber}
+                </button>
+            `;
+        }
+    ).join("");
+
+    const busData = JSON.stringify(buses);
+
+    const html = `
 <!DOCTYPE html>
 <html lang="en">
 
@@ -56,7 +111,7 @@ const server = http.createServer((req, res) => {
 <meta charset="UTF-8">
 
 <meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+      content="width=device-width, initial-scale=1.0">
 
 <title>BusGo - Bus Ticket Booking</title>
 
@@ -69,9 +124,9 @@ content="width=device-width, initial-scale=1.0">
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
     background: #f4f7fb;
-    color: #222;
+    color: #1f2937;
 }
 
 /* NAVBAR */
@@ -86,7 +141,7 @@ body {
 }
 
 .logo {
-    font-size: 26px;
+    font-size: 28px;
     font-weight: bold;
 }
 
@@ -98,6 +153,11 @@ body {
 .nav-links a {
     color: white;
     text-decoration: none;
+    font-size: 15px;
+}
+
+.nav-links a:hover {
+    color: #93c5fd;
 }
 
 /* HERO */
@@ -117,34 +177,36 @@ body {
 }
 
 .hero h1 {
-    font-size: 42px;
+    font-size: 44px;
     margin-bottom: 15px;
 }
 
 .hero p {
-    font-size: 18px;
+    font-size: 19px;
     margin-bottom: 35px;
 }
 
-/* SEARCH */
+/* SEARCH BOX */
 
 .search-box {
     background: white;
     padding: 25px;
-    border-radius: 12px;
 
-    max-width: 1000px;
+    border-radius: 14px;
+
+    max-width: 1050px;
     margin: auto;
 
     display: grid;
+
     grid-template-columns:
         repeat(4, 1fr) auto;
 
     gap: 15px;
 
     box-shadow:
-        0 10px 30px
-        rgba(0,0,0,0.15);
+        0 15px 35px
+        rgba(0, 0, 0, 0.18);
 }
 
 .input-group {
@@ -153,9 +215,13 @@ body {
 
 .input-group label {
     display: block;
-    color: #555;
+    color: #374151;
+
     font-size: 13px;
-    margin-bottom: 6px;
+
+    font-weight: bold;
+
+    margin-bottom: 7px;
 }
 
 .input-group input,
@@ -163,13 +229,20 @@ body {
 
     width: 100%;
 
-    padding: 12px;
+    padding: 13px;
 
-    border: 1px solid #ddd;
+    border: 1px solid #d1d5db;
 
-    border-radius: 7px;
+    border-radius: 8px;
 
     font-size: 14px;
+
+    outline: none;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+    border-color: #2563eb;
 }
 
 .search-btn {
@@ -182,9 +255,11 @@ body {
 
     padding: 0 25px;
 
-    border-radius: 7px;
+    border-radius: 8px;
 
-    font-size: 16px;
+    font-size: 15px;
+
+    font-weight: bold;
 
     cursor: pointer;
 }
@@ -193,22 +268,22 @@ body {
     background: #ea580c;
 }
 
-/* BUS SECTION */
+/* CONTENT */
 
 .container {
-
     max-width: 1100px;
 
-    margin: 50px auto;
+    margin: 55px auto;
 
     padding: 0 20px;
 }
 
 .section-title {
-
-    font-size: 28px;
+    font-size: 30px;
 
     margin-bottom: 25px;
+
+    color: #172554;
 }
 
 /* BUS CARD */
@@ -217,15 +292,15 @@ body {
 
     background: white;
 
-    border-radius: 12px;
+    border-radius: 14px;
 
     padding: 25px;
 
     margin-bottom: 20px;
 
     box-shadow:
-        0 3px 15px
-        rgba(0,0,0,0.08);
+        0 4px 18px
+        rgba(0, 0, 0, 0.08);
 
     display: grid;
 
@@ -238,27 +313,46 @@ body {
 }
 
 .bus-name {
-    font-size: 18px;
+    font-size: 19px;
+
     font-weight: bold;
+
+    color: #172554;
 }
 
 .bus-type {
-    color: #777;
-    margin-top: 5px;
+    color: #6b7280;
+
+    margin-top: 6px;
+
+    font-size: 14px;
 }
 
 .time {
     font-size: 18px;
+
     font-weight: bold;
+}
+
+.small-text {
+    color: #6b7280;
+
+    font-size: 13px;
+
+    margin-top: 4px;
 }
 
 .duration {
-    color: #777;
+    color: #6b7280;
+
+    margin-bottom: 7px;
 }
 
 .price {
-    font-size: 20px;
+    font-size: 21px;
+
     font-weight: bold;
+
     color: #16a34a;
 }
 
@@ -272,11 +366,13 @@ body {
 
     padding: 11px 20px;
 
-    border-radius: 7px;
+    border-radius: 8px;
 
     cursor: pointer;
 
     font-size: 14px;
+
+    font-weight: bold;
 }
 
 .book-btn:hover {
@@ -299,9 +395,16 @@ body {
     width: 100%;
     height: 100%;
 
+    background: rgba(0, 0, 0, 0.65);
+
+    align-items: center;
+
     justify-content: center;
 }
 
+.modal-content {
+
+    background: white;
 
     width: 90%;
 
@@ -309,7 +412,7 @@ body {
 
     padding: 30px;
 
-    border-radius: 12px;
+    border-radius: 14px;
 
     max-height: 90vh;
 
@@ -320,18 +423,29 @@ body {
 
     float: right;
 
-    font-size: 25px;
+    font-size: 28px;
 
     cursor: pointer;
 
-    color: #555;
+    color: #6b7280;
+}
+
+.close:hover {
+    color: #111827;
 }
 
 .modal-content h2 {
 
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 
     color: #172554;
+}
+
+#selectedBus {
+
+    color: #2563eb;
+
+    margin-bottom: 20px;
 }
 
 /* SEATS */
@@ -352,6 +466,24 @@ body {
 
     width: 50px;
 
+    height: 40px;
+
+    border: none;
+
+    border-radius: 7px;
+
+    background: #dcfce7;
+
+    color: #166534;
+
+    cursor: pointer;
+
+    font-weight: bold;
+}
+
+.seat:hover {
+    background: #bbf7d0;
+}
 
 .seat.selected {
 
@@ -361,11 +493,26 @@ body {
 }
 
 .seat.booked {
-    margin-bottom: 15px;
+
+    background: #d1d5db;
+
+    color: #6b7280;
+
+    cursor: not-allowed;
+}
+
+/* FORM */
+
+.form-group {
+
+    margin-bottom: 16px;
+}
+
+.form-group label {
 
     display: block;
 
-    margin-bottom: 6px;
+    margin-bottom: 7px;
 
     font-weight: bold;
 }
@@ -374,11 +521,13 @@ body {
 
     width: 100%;
 
-    padding: 12px;
+    padding: 13px;
 
-    border: 1px solid #ddd;
+    border: 1px solid #d1d5db;
 
-    border-radius: 7px;
+    border-radius: 8px;
+
+    font-size: 14px;
 }
 
 .confirm-btn {
@@ -393,13 +542,19 @@ body {
 
     padding: 14px;
 
-    border-radius: 7px;
+    border-radius: 8px;
 
     cursor: pointer;
 
     font-size: 16px;
 
+    font-weight: bold;
+
     margin-top: 10px;
+}
+
+.confirm-btn:hover {
+    background: #15803d;
 }
 
 /* CONFIRMATION */
@@ -415,7 +570,7 @@ body {
 
 .success {
 
-    font-size: 50px;
+    font-size: 55px;
 
     margin-bottom: 15px;
 }
@@ -424,35 +579,19 @@ body {
 
     background: #eff6ff;
 
-    padding: 15px;
+    padding: 18px;
 
-    border-radius: 7px;
+    border-radius: 8px;
 
-}
+    margin-top: 20px;
 
-.form-group label {
-    margin-top: 15px;
+    line-height: 1.8;
 
     font-weight: bold;
 
-    background: #d1d5db;
-
-
-
-    color: #6b7280;
-.form-group {
     color: #1d4ed8;
-
-/* FORM */
-
-}
-    cursor: not-allowed;
 }
 
-
-
-    cursor: pointer;
-}
 /* FOOTER */
 
 footer {
@@ -466,50 +605,57 @@ footer {
     padding: 30px;
 
     margin-top: 70px;
-    height: 40px;
 
-    color: #166534;
+    line-height: 1.8;
 }
-    border: none;
-    background: #dcfce7;
-
-
-
-    border-radius: 6px;
 
 /* RESPONSIVE */
 
-.modal-content {
-
-    background: white;
-@media(max-width: 800px) {
-    background:
-        rgba(0,0,0,0.6);
-
+@media (max-width: 900px) {
 
     .search-box {
+        grid-template-columns: 1fr 1fr;
+    }
 
+    .search-btn {
+        padding: 14px;
+    }
+
+    .bus-card {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .navbar {
+        padding: 16px 5%;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    .hero {
+        padding: 50px 5% 70px;
+    }
+
+    .hero h1 {
+        font-size: 32px;
+    }
+
+    .search-box {
         grid-template-columns: 1fr;
     }
 
     .bus-card {
-
         grid-template-columns: 1fr;
     }
 
-    .hero h1 {
-
-        font-size: 30px;
-    }
-
-
-    .nav-links {
-
-
-        display: none;
+    .container {
+        margin-top: 40px;
     }
 }
-
 
 </style>
 
@@ -521,23 +667,16 @@ footer {
 
 <nav class="navbar">
 
-<div class="logo">
-🚌 BusGo
+    <div class="logo">
+        🚌 BusGo
+    </div>
 
-</div>
-
-
-<div class="nav-links">
-
-
-<a href="#">Home</a>
-
-<a href="#">My Bookings</a>
-<a href="#">Offers</a>
-<a href="#">Contact</a>
-
-
-</div>
+    <div class="nav-links">
+        <a href="#">Home</a>
+        <a href="#">My Bookings</a>
+        <a href="#">Offers</a>
+        <a href="#">Contact</a>
+    </div>
 
 </nav>
 
@@ -546,72 +685,87 @@ footer {
 
 <section class="hero">
 
-<h1>Book Your Bus Journey</h1>
+    <h1>
+        Book Your Bus Journey
+    </h1>
 
-<p>
-Travel comfortably. Book easily.
+    <p>
+        Travel comfortably. Book easily.
+    </p>
 
-</p>
+    <div class="search-box">
+
+        <div class="input-group">
+
+            <label>From</label>
+
+            <input
+                type="text"
+                id="from"
+                placeholder="Chennai">
+
+        </div>
 
 
-<div class="search-box">
+        <div class="input-group">
 
-<div class="input-group">
+            <label>To</label>
 
-<label>From</label>
+            <input
+                type="text"
+                id="to"
+                placeholder="Bangalore">
 
-<input
-type="text"
-id="from"
-placeholder="Chennai">
+        </div>
 
-</div>
 
-<div class="input-group">
+        <div class="input-group">
 
-<label>To</label>
+            <label>Travel Date</label>
 
-<input
-type="text"
-id="to"
-placeholder="Bangalore">
+            <input
+                type="date"
+                id="date">
 
-</div>
+        </div>
 
-<div class="input-group">
 
-<label>Travel Date</label>
+        <div class="input-group">
 
-<input
-type="date"
-id="date">
+            <label>Passengers</label>
 
-</div>
+            <select id="passengers">
 
-<div class="input-group">
+                <option value="1">
+                    1 Passenger
+                </option>
 
-<label>Passengers</label>
+                <option value="2">
+                    2 Passengers
+                </option>
 
-<select id="passengers">
+                <option value="3">
+                    3 Passengers
+                </option>
 
-<option value="1">1 Passenger</option>
-<option value="2">2 Passengers</option>
-<option value="3">3 Passengers</option>
-<option value="4">4 Passengers</option>
+                <option value="4">
+                    4 Passengers
+                </option>
 
-</select>
+            </select>
 
-</div>
+        </div>
 
-<button
-class="search-btn"
-onclick="searchBuses()">
 
-Search Buses
+        <button
+            class="search-btn"
+            onclick="searchBuses()">
 
-</button>
+            Search Buses
 
-</div>
+        </button>
+
+    </div>
 
 </section>
 
@@ -620,77 +774,15 @@ Search Buses
 
 <div class="container">
 
-<h2 class="section-title">
-Available Buses
-</h2>
+    <h2 class="section-title">
+        Available Buses
+    </h2>
 
-<div id="busList">
+    <div id="busList">
 
-${buses.map(bus => `
+        ${busCards}
 
-<div class="bus-card">
-
-<div>
-
-<div class="bus-name">
-${bus.name}
-</div>
-
-<div class="bus-type">
-${bus.type}
-</div>
-
-</div>
-
-<div>
-
-<div class="time">
-${bus.departure}
-</div>
-
-<div>
-Departure
-</div>
-
-</div>
-
-<div>
-
-<div class="time">
-${bus.arrival}
-</div>
-
-<div>
-Arrival
-</div>
-
-</div>
-
-<div>
-
-<div class="duration">
-${bus.duration}
-</div>
-
-<div class="price">
-₹${bus.price}
-</div>
-
-</div>
-
-<button
-class="book-btn"
-onclick="openBooking(${bus.id})">
-
-Book Now
-
-</button>
-
-</div>
-
-`).join("")}
-
-</div>
+    </div>
 
 </div>
 
@@ -698,114 +790,109 @@ Book Now
 <!-- BOOKING MODAL -->
 
 <div
-class="modal"
-id="bookingModal">
+    class="modal"
+    id="bookingModal">
 
-<div class="modal-content">
+    <div class="modal-content">
 
-<span
-class="close"
-onclick="closeBooking()">
+        <span
+            class="close"
+            onclick="closeBooking()">
 
-×
-</span>
+            &times;
 
-<div id="bookingForm">
-
-<h2>
-Select Your Seat
-</h2>
-
-<p id="selectedBus"></p>
-
-<div class="seats">
-
-${Array.from({length: 20}, (_, i) => `
-
-<button
-class="seat ${[3,8,14].includes(i) ? "booked" : ""}"
-${[3,8,14].includes(i) ? "disabled" : ""}
-onclick="selectSeat(this, ${i + 1})">
-
-${i + 1}
-
-</button>
-
-`).join("")}
-
-</div>
-
-<div class="form-group">
-
-<label>
-Passenger Name
-</label>
-
-<input
-type="text"
-id="passengerName"
-placeholder="Enter passenger name">
-
-</div>
-
-<div class="form-group">
-
-<label>
-Mobile Number
-</label>
-
-<input
-type="tel"
-id="mobile"
-placeholder="Enter mobile number">
-
-</div>
-
-<button
-class="confirm-btn"
-onclick="confirmBooking()">
-
-Confirm Booking
-
-</button>
-
-</div>
+        </span>
 
 
-<div
-class="confirmation"
-id="confirmation">
+        <div id="bookingForm">
 
-<div class="success">
-✅
-</div>
+            <h2>
+                Select Your Seat
+            </h2>
 
-<h2>
-Booking Confirmed!
-</h2>
+            <p id="selectedBus"></p>
 
-<p>
-Your bus ticket has been booked successfully.
-</p>
 
-<div
-class="booking-id"
-id="bookingId">
-</div>
+            <div class="seats">
 
-<br>
+                ${seatButtons}
 
-<button
-class="book-btn"
-onclick="closeBooking()">
+            </div>
 
-Done
 
-</button>
+            <div class="form-group">
 
-</div>
+                <label>
+                    Passenger Name
+                </label>
 
-</div>
+                <input
+                    type="text"
+                    id="passengerName"
+                    placeholder="Enter passenger name">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Mobile Number
+                </label>
+
+                <input
+                    type="tel"
+                    id="mobile"
+                    placeholder="Enter mobile number">
+
+            </div>
+
+
+            <button
+                class="confirm-btn"
+                onclick="confirmBooking()">
+
+                Confirm Booking
+
+            </button>
+
+        </div>
+
+
+        <div
+            class="confirmation"
+            id="confirmation">
+
+            <div class="success">
+                ✅
+            </div>
+
+            <h2>
+                Booking Confirmed!
+            </h2>
+
+            <p>
+                Your bus ticket has been booked successfully.
+            </p>
+
+            <div
+                class="booking-id"
+                id="bookingId">
+            </div>
+
+            <br>
+
+            <button
+                class="book-btn"
+                onclick="closeBooking()">
+
+                Done
+
+            </button>
+
+        </div>
+
+    </div>
 
 </div>
 
@@ -814,31 +901,35 @@ Done
 
 <footer>
 
-<p>
-© 2026 BusGo - Bus Ticket Booking
-</p>
+    <p>
+        © 2026 BusGo - Bus Ticket Booking
+    </p>
 
-<p>
-Safe • Fast • Reliable
-</p>
+    <p>
+        Safe • Fast • Reliable
+    </p>
 
 </footer>
 
 
 <script>
 
+const busesData = ${busData};
+
 let selectedSeat = null;
 
 let selectedBusData = null;
 
 
+/* SEARCH */
+
 function searchBuses() {
 
     const from =
-        document.getElementById("from").value;
+        document.getElementById("from").value.trim();
 
     const to =
-        document.getElementById("to").value;
+        document.getElementById("to").value.trim();
 
     const date =
         document.getElementById("date").value;
@@ -846,7 +937,7 @@ function searchBuses() {
     if (!from || !to || !date) {
 
         alert(
-            "Please enter From, To and Travel Date"
+            "Please enter From, To and Travel Date."
         );
 
         return;
@@ -856,25 +947,35 @@ function searchBuses() {
         "Buses available from " +
         from +
         " to " +
-        to
+        to +
+        " on " +
+        date
     );
+
 }
 
+
+/* OPEN BOOKING */
 
 function openBooking(busId) {
 
     selectedBusData =
-        ${JSON.stringify(buses)}.find(
-            bus => bus.id === busId
-        );
+        busesData.find(function (bus) {
+            return bus.id === busId;
+        });
+
+    if (!selectedBusData) {
+        return;
+    }
 
     document.getElementById(
         "selectedBus"
     ).innerHTML =
-
         "<strong>" +
         selectedBusData.name +
-        "</strong> - ₹" +
+        "</strong> - " +
+        selectedBusData.type +
+        " - ₹" +
         selectedBusData.price;
 
     document.getElementById(
@@ -883,6 +984,8 @@ function openBooking(busId) {
 
 }
 
+
+/* CLOSE BOOKING */
 
 function closeBooking() {
 
@@ -898,21 +1001,36 @@ function closeBooking() {
         "confirmation"
     ).style.display = "none";
 
+    document.getElementById(
+        "passengerName"
+    ).value = "";
+
+    document.getElementById(
+        "mobile"
+    ).value = "";
+
+    document
+        .querySelectorAll(".seat")
+        .forEach(function (seat) {
+
+            seat.classList.remove("selected");
+
+        });
+
     selectedSeat = null;
 
 }
 
 
+/* SELECT SEAT */
+
 function selectSeat(button, seatNumber) {
 
     document
         .querySelectorAll(".seat")
-        .forEach(seat => {
+        .forEach(function (seat) {
 
-            seat.classList.remove(
-                "selected"
-            );
-
+            seat.classList.remove("selected");
         });
 
     button.classList.add("selected");
@@ -922,31 +1040,56 @@ function selectSeat(button, seatNumber) {
 }
 
 
-function confirmBooking() {
-
-    const name =
-        document.getElementById(
-            "passengerName"
-        ).value;
-
     const mobile =
         document.getElementById(
             "mobile"
+        ).value.trim();
+
+    const passengers =
+        document.getElementById(
+            "passengers"
         ).value;
 
     if (!selectedSeat) {
 
         alert(
-            "Please select a seat"
+            "Please select a seat."
         );
 
         return;
     }
 
-    if (!name || !mobile) {
+    if (!name) {
 
         alert(
-            "Please enter passenger details"
+            "Please enter passenger name."
+        );
+
+        return;
+    }
+
+            "passengerName"
+        ).value.trim();
+
+    if (!mobile) {
+
+        alert(
+/* CONFIRM BOOKING */
+    const name =
+        document.getElementById(
+            "Please enter mobile number."
+        );
+
+
+function confirmBooking() {
+
+        return;
+    }
+
+    if (!/^[0-9]{10}$/.test(mobile)) {
+
+        alert(
+            "Please enter a valid 10-digit mobile number."
         );
 
         return;
@@ -958,6 +1101,11 @@ function confirmBooking() {
             100000 +
             Math.random() * 900000
         );
+
+    const travelDate =
+        document.getElementById(
+            "date"
+        ).value || "Not selected";
 
     document.getElementById(
         "bookingId"
@@ -971,12 +1119,24 @@ function confirmBooking() {
         name +
         "<br>" +
 
+        "Mobile: " +
+        mobile +
+        "<br>" +
+
+        "Bus: " +
+        selectedBusData.name +
+        "<br>" +
+
         "Seat: " +
         selectedSeat +
         "<br>" +
 
-        "Bus: " +
-        selectedBusData.name;
+        "Passengers: " +
+        passengers +
+        "<br>" +
+
+        "Travel Date: " +
+        travelDate;
 
     document.getElementById(
         "bookingForm"
@@ -988,19 +1148,38 @@ function confirmBooking() {
 
 }
 
+
+/* CLOSE MODAL WHEN CLICKING OUTSIDE */
+
+window.onclick = function (event) {
+
+    const modal =
+        document.getElementById(
+            "bookingModal"
+        );
+
+    if (event.target === modal) {
+        closeBooking();
+    }
+
+};
+
 </script>
 
 </body>
 
 </html>
-    `);
+`;
+
+    res.end(html);
+
 });
 
 
-server.listen(PORT, () => {
+server.listen(PORT, function () {
 
     console.log(
-        \`BusGo server running on port \${PORT}\`
+        "BusGo server running on port " + PORT
     );
 
 });
